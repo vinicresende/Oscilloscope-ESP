@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang = "en">
+	<head>
+		<meta charset = "UTF-8">
+		<meta http-equiv = "X-UA-Compatible" content = "IE=edge">
+		<meta name = "viewport" content = "widht=device-widht, initial-scale=1">
+		<title>OndeggiareLu</title>
+		
+		<link rel = "stylesheet" href = "http://www.w3schools.com/lib/w3.css"/>
+		<link rel = "stylesheet" type = "text/css" href = "CSS/style4.css" media = "screen"/>
+		
+		<style>
+			#mySidebar{
+				display: none;
+			}
+			#CH1, #MTH, #CH2, #CURS, #TRG{
+				right:0;
+			}
+			.layoutBar{
+				-webkit-appearance: none;
+				height: 6px;
+				border-radius: 3px;
+				background: purple;
+				outline: none;
+				opacity: 0.7;
+				-webkit-transition: .2s;
+				transition: opacity .2s;
+			}
+			.layoutBar:hover {
+				opacity: 1;
+			}
+			.layoutBar::-webkit-slider-thumb {
+				-webkit-appearance: none;
+				appearance: none;
+				width: 16px;
+				height: 16px;
+				border-radius: 50%;
+				background: purple;
+				cursor: pointer;
+			}
+			.layoutBar::-moz-range-thumb {
+				width: 25px;
+				height: 25px;
+				border-radius: 50%;
+				background: purple;
+				cursor: pointer;
+			}
+			.rdn {
+				background-color: purple;
+			}
+		</style>
+	</head>
+	<body>
+		<!-- Sidebar -->
+		<div class = "w3-sidebar w3-bar-block w3-card w3-animate-left" id = "mySidebar">
+			<button onclick = "w3_close()" class = "w3-bar-item w3-button w3-large w3-right-align">Fechar &times;</button>
+			<div class = "w3-container">
+				<h2>Menu</h2>
+				<div class = "w3-center">
+					<p><button class = "w3-bar-item w3-button w3-ripple w3-purple w3-hover-light-gray w3-hover-text-purple w3-border w3-border-purple w3-round-xxlarge w3-center" onclick = "start()"><b>Iniciar/Parar</b></button></p>
+				</div>
+				<div class = "w3-dropdown-click w3-hover-none w3-right">
+					<div class = "w3-center">
+						<div class = "w3-col s6 m6 l6 w3-padding-xlarge">
+							<p><button class = "w3-bar-item w3-button w3-ripple w3-center w3-padding-large w3-light-gray w3-hover-purple w3-border w3-border-gray w3-round-xlarge" onclick = "myDropCH1()" onblur = "desfoque()">CH1</button></p>
+							<div id = "CH1" class = "w3-dropdown-content w3-card w3-round-xlarge">
+								<a href = "#" class = "w3-card w3-light-gray w3-round-xlarge">X [ms/div] 
+										<span class = "Barra">
+											<input id = "barX" class = "layoutBar" type = "range" min = "-500" value = "0" max = "500" step = "1">
+										</span>
+										<span id = "numX" class = "w3-card w3-gray"></span>
+									<br> Y [V/div] 
+										<span class = "Barra">
+											<input id = "barY" class = "layoutBar" type = "range" min = "-10" value = "0" max = "10" step = "1">
+										</span>
+										<span id = "numY" class = "w3-card w3-gray"></span>
+									<br> Nome Canal: <input class = "w3-card w3-gray" type = "text" placeholder = "Nome canal.." style = "width:50%">
+									<br> Label X: <span class = "w3-card w3-gray">Tempo de partida</span>
+								</a>
+							</div></div>
+						<div class = "w3-col s6 m6 l6 w3-padding-xlarge">
+							<p><button class = "w3-bar-item w3-button w3-ripple w3-center w3-padding-large w3-light-gray w3-hover-purple w3-border w3-border-gray w3-round-xlarge" onclick = "myDropMTH()" onblur = "desfoque()">MTH</button></p>
+							<div id = "MTH" class = "w3-dropdown-content w3-card w3-round-xlarge">
+								<a href = "#" class = "w3-card w3-light-gray w3-round-xlarge">Operação: A * (CHx <span class = "w3-text-red">?</span> CHy)
+									<br>A: <input id = "A" class = "w3-card w3-gray" type = "number" placeholder = "A.." style = "width:17%"><br>
+									<span class = "w3-text-red">?</span>:
+										<input type = "radio" checked = "checked" id = "mthOp1" name = "symbol" value = "+" class = "rdn"><label for = "op1">+</label>
+										<input type = "radio" id = "mthOp2" name = "symbol" value = "-"class = "rdn"><label for = "op2">-</label>
+										<input type = "radio" id = "mthOp3" name = "symbol" value = "x" class = "rdn"><label for = "op3">x</label>
+										<input type = "radio" id = "mthOp4" name = "symbol" value = "/" class = "rdn"><label for = "op4">/</label><br>
+									CHx: <input type = "radio" checked = "checked" id = "CHx1" name = "chX" class = "rdn"><label for = "op1">CH1</label>
+										<input type = "radio" id = "CHx2" name = "chX" class = "rdn"><label for = "op2">CH2</label><br>
+									CHy: <input type = "radio" checked = "checked" id = "CHy1" name = "chY" class = "rdn"><label for = "op1">CH1</label>
+										<input type = "radio" id = "CHy2" name = "chY" class = "rdn"><label for = "op2">CH2</label>
+								</a>
+							</div>
+					</div></div>
+					<div class = "w3-center">
+						<div class = "w3-col s6 m6 l6 w3-padding-xlarge">
+							<p><button class = "w3-bar-item w3-button w3-ripple w3-center w3-padding-large w3-light-gray w3-hover-purple w3-border w3-border-gray w3-round-xlarge" onclick = "myDropCH2()" onblur = "desfoque()">CH2</button></p>
+							<div id = "CH2" class = "w3-dropdown-content w3-card w3-round-xlarge">
+								<a href = "#" class = "w3-card w3-light-gray w3-round-xlarge">X [ms/div] 
+										<span class = "Barra">
+											<input id = "barX2" class = "layoutBar" type = "range" min = "-500" value = "0" max = "500" step = "1">
+										</span>
+										<span id = "numX2" class = "w3-card w3-gray"></span>
+									<br> Y [V/div] 
+										<span class = "Barra">
+											<input id = "barY2" class = "layoutBar" type = "range" min = "-10" value = "0" max = "10" step = "1">
+										</span>
+										<span id = "numY2" class = "w3-card w3-gray"></span>
+									<br> Nome Canal: <input class = "w3-card w3-gray" type = "text" placeholder = "Nome canal.." style = "width:50%">
+									<br> Label X: <span class = "w3-card w3-gray">Tempo de partida</span>
+								</a>
+							</div></div>
+                        <div class = "w3-col s6 m6 l6 w3-padding-xlarge">
+							<p><button class = "w3-bar-item w3-button w3-ripple w3-center w3-padding-large w3-light-gray w3-hover-purple w3-border w3-border-gray w3-round-xlarge" onclick = "myDropCURS()" onblur = "desfoque()">CURS</button></p>
+							<div id = "CURS" class = "w3-dropdown-content w3-card w3-round-xlarge">
+								<a href = "#" class = "w3-card w3-light-gray w3-round-xlarge">Tipo: 
+										<select id = "tipo" class = "w3-card w3-gray">
+											<option value = "opt1">Vertical</option>
+											<option value = "opt2">Horizontal????</option>
+										</select>
+									<br>Modo: <input type = "radio" checked = "checked" id = "modoH" name = "mod" class = "rdn"><label for = "op1">Habilitado</label>
+									<input type = "radio" id = "modoD" name = "mod" class = "rdn"><label for = "op2">Desabilitado</label>
+								</a>
+							</div>
+					</div></div>
+					<div class = "w3-center w3-padding-xlarge">
+						<p><button class = "w3-bar-item w3-button w3-ripple w3-center w3-padding-large w3-light-gray w3-hover-purple w3-border w3-border-gray w3-round-xlarge" onclick = "myDropTRG()" onblur = "desfoque()">TRG</button></p>
+						<div id = "TRG" class = "w3-dropdown-content w3-card w3-round-xlarge">
+							<a href = "#" class = "w3-card w3-light-gray w3-round-xlarge">% Tela 
+									<span class = "Barra">
+										<input id = "barTela" class = "layoutBar" type = "range" min = "0" value = "50" max = "100" step = "1">
+									</span>
+									<span id = "numTela" class = "w3-card w3-gray"></span>
+								<br>Fonte: <select id = "fonte" class = "w3-card w3-gray">
+										<option value = "opt1">CH1</option>
+										<option value = "opt2">CH2???</option>
+									</select>
+								<br>Modo: <select id = "modo" class = "w3-card w3-gray">
+										<option value = "opt1">Borda de Subida</option>
+										<option value = "opt2">?????</option>
+									</select>
+							</a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div id = "main">
+		
+		
+		<div class = "w3-teal">
+			<button id = "openNav" class = "w3-button w3-teal w3-xlarge" onclick = "w3_open()">&#9776;</button>
+			<div class = "w3-container">
+			
+				<h1 style = "text-shadow:1px 1px 0 #444" class = "w3-serif w3-center w3-xxxlarge">Osciloscópio</h1>
+			</div>
+		</div>
+		
+		<header class = "w3-container w3-teal">
+			<h1>Gráfico</h1>
+		</header>
+		
+		<div id = "chartContainer"></div>
+		
+		<!-- <footer class = "w3-container w3-teal w3-text-white-opacity"> -->
+			<!-- <h5>Testando</h5> -->
+		<!-- </footer> -->
+		
+		<script src = "https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+		<script src = "Scripts/main4.js"></script>
+	</body>
+</html>
