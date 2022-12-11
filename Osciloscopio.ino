@@ -4,6 +4,7 @@
 #include <ESPAsyncWebServer.h>
 #include <FilaCircular.h>
 #include <LITTLEFS.h>
+#include <esp_timer.h>
 
 //Configuração Wifi:
 const char* ssid = "Baby";
@@ -12,63 +13,6 @@ const char* password = "havanagila";
 // Criaum Objeto AsyncWebServer na porta 80
 AsyncWebServer server(80);
 AsyncWebSocket ws("/ws");
-
-
-
-/*const char index_html[] PROGMEM = R"rawliteral(
-<!DOCTYPE HTML><html>
-<head>
-  <title>ESP Web Server</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" href="data:,">
-<title>ESP Web Server</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<link rel="icon" href="data:,">
-</head>
-<body>
-  <div class="topnav">
-    <h1>ESP WebSocket Server</h1>
-  </div>
-<script>
-  var gateway = `ws://${window.location.hostname}/ws`;
-  var websocket;
-  window.addEventListener('load', onLoad);
-  function initWebSocket() {
-    console.log('Trying to open a WebSocket connection...');
-    websocket = new WebSocket(gateway);
-    websocket.binaryType = "arraybuffer";
-    websocket.onopen    = onOpen;
-    websocket.onclose   = onClose;
-    websocket.onmessage = onMessage; // <-- add this line
-  }
-  function onOpen(event) {
-    console.log('Connection opened');
-  }
-  function onClose(event) {
-    console.log('Connection closed');
-    setTimeout(initWebSocket, 2000);
-  }
-  function onMessage(event) {
-    
-     if (event.data instanceof ArrayBuffer) {
-    // binary frame
-    const view = new DataView(event.data);
-    console.log(view.getInt32(0));console.log(event.data);
-    } else {
-      // text frame
-      console.log(event.data);
-    }
-  }
-  function onLoad(event) {
-    initWebSocket();
-  }
-</script>
-</body>
-</html>
-)rawliteral";
-*/
-
-
 
 //Botões de Controle do LTC1605CN
 #define RC 18
@@ -99,26 +43,50 @@ AsyncWebSocket ws("/ws");
 // Variáveis de Aquisição
 byte d0, d1, d2, d3, d4, d5, d6, d7, d8, d9, d10, d11, d12, d13, d14, d15;
 
+//Variaveis de controle de inicar e parar
+bool habilitaAquisicao = false;
+bool cont = true;
+
+//FilaCircular
+
+
 //Variáveis Globais//
 unsigned long tempoAtual = 0; //Para contagem do intervalo de aquisião
-short contLoop = 0; //contador de loops de aquisição
+short contLoop = 0; //contador de maxVetor de aquisição
 bool busy = true; //Controle que o LTC1605 está ocupado
 short dado; //Junção dos bits de 0~16
+short dadoAnterior; //Junção dos bits de 0~16
 unsigned long t1=0,t2=0,dt=0,t1ws=0,t2ws=0,dtws=0; //Contador temporário de tempo de aquisição
 
-const short loops = 1000; //Quantidade de aquisições
+//FilaCircular
+const short maxVetor = 1000; //Quantidade de aquisições
+short inicio;
+short fim;
+short triggerPos;
+short preTriger;
+short triggerNivel;
+short xMax;
+uint8_t filaCircular [2*maxVetor];
+bool preTriggerOk = false;
+bool triggerOk = false;
+bool postriggerOk = false;
+
+
+String msgWs = ""; //Mensagem Recebida por Websocket
 
 //Vetor de Dados deve ter parte baixa primeiro (Little Endian)
-uint8_t vetorDado[2*loops]; //Vetor de uint8_t para usar enviar por websocket
+uint8_t vetorDado[2*maxVetor]; //Vetor de uint8_t para usar enviar por websocket
 
 bool enviarWs = false;//Sinal de controle de quando enviar o WebSocket
 
 void IRAM_ATTR BusyFunction() {
     dado = 0;
+    
     t1=micros();
     
     digitalWrite(CS,0); //ChipSelect em 0 para ler
-    micros(); //intervalo para obedecer o t12 (Bus Access Time) após CS LOW (83nS MAX)
+    //micros(); //intervalo para obedecer o t12 (Bus Access Time) após CS LOW (83nS MAX)
+    esp_timer_get_time();
     d0 = digitalRead(D0);
     d1 = digitalRead(D1);
     d2 = digitalRead(D2);
@@ -144,14 +112,30 @@ void IRAM_ATTR BusyFunction() {
     vetorDado[2*contLoop+1] = (dado >> 8)& 0xff;
     t2=micros();
     dt += t2 - t1;
-    contLoop ++;
+    contLoop = (contLoop +1);
     //Serial.printf(" %d",contLoop);
-    if (contLoop<loops){
-      busy = false;
-    } else {
+    /*
+    //Pre Trigger
+    if (contLoop > pretrigger){
+      preTriggerOk= true;
+    }
+
+    //Trigger:
+    if (dado > dadoAnterior && preTriggerOk){
+      triggerOk= true;
+    }
+
+    //PosTrigger:
+    */
+    
+    if (contLoop>=maxVetor){
       contLoop=0;
-      dt = dt/loops;
+      dt = dt/maxVetor;
       enviarWs = true; //Pode Enviar o WebSocket com os dados
+      //preTriggerOk = false;
+      //triggerOK = false;
+    } else {
+      busy = false;
     }    
 
 }
@@ -187,6 +171,10 @@ void notifyClients() {
   ws.textAll("oi");
 }
 
+void iniciarParar(){
+  
+}
+
 void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType type,
              void *arg, uint8_t *data, size_t len) {
   switch (type) {
@@ -198,6 +186,37 @@ void onEvent(AsyncWebSocket *server, AsyncWebSocketClient *client, AwsEventType 
       break;
     case WS_EVT_DATA:
       //handleWebSocketMessage(arg, data, len);
+      msgWs = "";
+        for (size_t i = 0; i < len; i++) {
+          msgWs += (char) data[i];
+        };
+      //Serial.printf("Dado Recebido [%u]: %s\n", client->id(), msgWs);
+      //Serial.printf("Dado Convertido [%u]: %s\n", client->id(), msgWs.c_str());
+      //if (!strcmp((char *)data,"OFF")){
+      if (!strcmp(msgWs.c_str(),"OFF")){
+        Serial.println("Recebi OFF");
+        habilitaAquisicao = false;
+      } else {
+        //Serial.println((char *)data);
+        if (!strcmp(msgWs.c_str(),"ON")){
+          Serial.println("Recebi ON");
+          habilitaAquisicao = true;
+          cont=true;
+        } else {
+          /*char msg[5];
+          for (size_t i = 0; i < 4; i++) {
+            msg[i] = (char) data[i];
+          };
+          msg[4]=NULL;*/
+          //Serial.println(msg);
+          if (!strcmp(msgWs.c_str(),"CONT")){
+            cont = true;
+          } else {
+            cont = false;
+          }
+        }
+      }
+      
       break;
     case WS_EVT_PONG:
     case WS_EVT_ERROR:
@@ -264,8 +283,13 @@ void setup() {
   
   // Start server
   server.begin();
-
-
+  /*
+  //Triggers
+  xMax = 500;
+  triggerPos = 50;
+  preTrigger = 2*xMax*50/100;
+  */
+  //tempoAtual = esp_timer_get_time(); //Inicia o contador de tempoAtual
   tempoAtual = millis(); //Inicia o contador de tempoAtual
   
   digitalWrite(RC,1);
@@ -276,6 +300,7 @@ void loop() {
 
   int inicia = digitalRead(Botao) | !busy;
   //PARA LEITURAS USANDO O BOTÃO e apenas uma aquisição a cada 1ms
+  /*
   if (inicia && millis()-tempoAtual>1){
       digitalWrite(RC,0);
       digitalWrite(CS,0);
@@ -289,17 +314,39 @@ void loop() {
       tempoAtual = millis();
 
   }
-
+  */
   if (enviarWs){
     t1ws=micros();
     ws.binaryAll(vetorDado,2000);
     t2ws=micros();
     dtws=t2ws-t1ws;
-    Serial.print("   dt_WS = ");
-    Serial.print(dtws);
-    Serial.println("us");
+    //Serial.print("   dt_WS = ");
+    //Serial.print(dtws);
+    //Serial.println("us");
     enviarWs=false;
     
   }
+  bool habilita = (habilitaAquisicao || !busy) && cont;
+  //PARA LEITURA AUTOMÁTICAS VIA MENSAGENS WEBSOCKET
+  if (habilita && millis()-tempoAtual>=1){
+      //millis();
+      digitalWrite(RC,0);
+      digitalWrite(CS,0);
+      millis(); //t1 (Convert pulse width) tempo de RC e CS em LOW mínimo de 40nS
+      //micros();
+      //micros();
+      //micros();
+      //micros();
+      //micros();
+      digitalWrite(CS,1);
+      digitalWrite(RC,1);
+      busy = true;
+      tempoAtual = millis();
+      //millis();
+      
+
+  }
+ 
+  
 
 }
