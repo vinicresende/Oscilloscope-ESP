@@ -1,0 +1,63 @@
+	/* html { */
+		/* background-color: black; */
+	/* } */
+	
+	h1 {
+		margin: 0;
+	}
+	#openNav {
+		background-color: #3700B3;
+	}
+
+
+	#mySidebar{
+		display: none;
+	}
+	#CH1, #MTH, #CURS, #TRG{
+		right:0;
+	}
+	.layoutBar{
+		-webkit-appearance: none;
+		height: 6px;
+		border-radius: 3px;
+		background: purple;
+		outline: none;
+		opacity: 0.7;
+		-webkit-transition: .2s;
+		transition: opacity .2s;
+	}
+	.layoutBar:hover {
+		opacity: 1;
+	}
+	.layoutBar::-webkit-slider-thumb {
+		-webkit-appearance: none;
+		appearance: none;
+		width: 16px;
+		height: 16px;
+		border-radius: 50%;
+		background: purple;
+		cursor: pointer;
+	}
+	.layoutBar::-moz-range-thumb {
+		width: 25px;
+		height: 25px;
+		border-radius: 50%;
+		background: purple;
+		cursor: pointer;
+	}
+	.rdn {
+		background-color: purple;
+	}
+
+	@media only screen and (max-width: 480px) {
+		.w3-sidebar {
+			min-width: 50%;
+		}
+	}
+	@media only screen and (max-width: 759px) {
+		.w3-sidebar {
+			min-width: 50%;
+		}
+	}
+	
+	
